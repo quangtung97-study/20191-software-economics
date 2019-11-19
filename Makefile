@@ -5,3 +5,6 @@ all:
 
 test:
 	cargo test
+
+count:
+	fd | grep "\.rs" | xargs wc -l

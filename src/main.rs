@@ -1,13 +1,37 @@
+mod data;
 mod newton;
 mod vmi;
 
-use ndarray::Array1;
-use ndarray::{arr1, arr2};
+use vmi::input::Input;
+use vmi::output::{MOutput, ROutput};
+use vmi::{da_NP, dp_NP, DP, NP};
 
 fn main() {
-    let f = |x: &Array1<f32>| arr1(&[2.0 * x[0] + x[1] - 5.0, 4.0 * x[0] - 3.0 * x[1] + 5.0]);
-    let df = |_: &Array1<f32>| arr2(&[[2.0, 1.0], [4.0, -3.0]]);
-    let x0 = arr1(&[10.0, 10.0]);
-    let x = newton::newton_method(f, df, &x0);
-    println!("{}", x);
+    let mut input = Input::new(3, 4, vec![vec![0, 1, 2, 3], vec![0, 1, 2], vec![0, 3]]);
+
+    let moutput = MOutput::new(&input);
+    let routput = ROutput::new(&input);
+
+    data::read_v_mgxy("v_mgxy", &mut input);
+    data::read_ea_mgxy("ea_mgxy", &mut input);
+    data::read_beta_mgxy("beta_mgxy", &mut input);
+    data::init_ep_mgxy(&mut input);
+    data::read_K_mg("K_mg", &mut input);
+    data::read_zeta_mg("zeta_mg", &mut input);
+    data::read_eA_mgy("eA_mgy", &mut input);
+    data::read_u_mgy("u_mgy", &mut input);
+
+    println!("{}", DP(0, 0, &input, &moutput, &routput));
+    println!("{}", NP(0, &input, &moutput, &routput));
+    for j in &input.retailer_products[0] {
+        println!("{}", dp_NP(0, *j, &input, &moutput, &routput));
+        println!("{}", da_NP(0, *j, &input, &moutput, &routput));
+    }
+
+    let mut routput1 = routput.clone();
+    routput1.mg[0][1].a = 0.2;
+    println!(
+        "Derivative: {}",
+        (NP(0, &input, &moutput, &routput1) - NP(0, &input, &moutput, &routput)) / 0.2
+    );
 }
