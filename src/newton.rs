@@ -4,7 +4,7 @@ use ndarray_linalg::Solve;
 const N: usize = 100;
 
 #[allow(dead_code)]
-pub fn simple_newton_method(f: impl Fn(f32) -> f32, df: impl Fn(f32) -> f32, x0: f32) -> f32 {
+pub fn simple_newton_method(f: impl Fn(f64) -> f64, df: impl Fn(f64) -> f64, x0: f64) -> f64 {
     let mut x = x0;
     for _ in 0..N {
         x = x - f(x) / df(x);
@@ -14,15 +14,21 @@ pub fn simple_newton_method(f: impl Fn(f32) -> f32, df: impl Fn(f32) -> f32, x0:
 
 #[allow(dead_code)]
 pub fn newton_method(
-    f: impl Fn(&Array1<f32>) -> Array1<f32>,
-    df: impl Fn(&Array1<f32>) -> Array2<f32>,
-    x0: &Array1<f32>,
-) -> Array1<f32> {
+    f: impl Fn(&Array1<f64>) -> Array1<f64>,
+    df: impl Fn(&Array1<f64>) -> Array2<f64>,
+    x0: &Array1<f64>,
+) -> Array1<f64> {
     let mut x = x0.clone();
     for _ in 0..N {
+        println!("x: {}", &x);
         let minus_fx = -f(&x);
+        println!("-f(x): {}", &minus_fx);
         let jx = df(&x);
-        let dx = jx.solve_into(minus_fx).unwrap();
+        println!("{}", &jx);
+        let dx = match jx.solve_into(minus_fx) {
+            Ok(m) => m,
+            Err(_) => break,
+        };
         x = x + dx;
     }
     return x;
@@ -36,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_simple_newton_method() {
-        let x = simple_newton_method(|x: f32| 2.0 * x - 4.0, |_: f32| 2.0, 4.0);
+        let x = simple_newton_method(|x: f64| 2.0 * x - 4.0, |_: f64| 2.0, 4.0);
         assert_approx_eq!(x, 2.0);
 
         let f = |x| x * x + 2.0 * x - 3.0;
@@ -51,8 +57,8 @@ mod tests {
 
     #[test]
     fn test_newton_method() {
-        let f = |x: &Array1<f32>| arr1(&[2.0 * x[0] + x[1] - 5.0, 4.0 * x[0] - 3.0 * x[1] + 5.0]);
-        let df = |_: &Array1<f32>| arr2(&[[2.0, 1.0], [4.0, -3.0]]);
+        let f = |x: &Array1<f64>| arr1(&[2.0 * x[0] + x[1] - 5.0, 4.0 * x[0] - 3.0 * x[1] + 5.0]);
+        let df = |_: &Array1<f64>| arr2(&[[2.0, 1.0], [4.0, -3.0]]);
         let x0 = arr1(&[10.0, 10.0]);
         let x = newton_method(f, df, &x0);
         assert_approx_eq!(x[0], 1.0);
